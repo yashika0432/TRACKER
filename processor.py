@@ -1,27 +1,42 @@
 import pandas as pd
 from datetime import datetime
-from config.settings import THRESHOLD_DAYS
+from config.settings import THRESHOLD_DAYS, MAX_DAYS
 
 EXCEL_PATH = "data/final_dashboard_updated.xlsx"
 
 def get_escalation_rows():
 
-    df = pd.read_excel(EXCEL_PATH)
+    df = pd.read_excel(EXCEL_PATH, header=2)
 
-    today = datetime.today().strftime("%Y-%m-%d")
+    # Clean columns
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.upper()
+        .str.replace("\n", "_")
+        .str.replace(" ", "_")
+    )
 
-    filtered_rows = []
+    # Convert APS_RECEIVED_DATE to datetime
+    df["APS_RECEIVED_DATE"] = pd.to_datetime(
+    df["APS_RECEIVED_DATE"],
+    dayfirst=True,
+    errors="coerce"
+)
 
-    for index, row in df.iterrows():
+    # Calculate days elapsed
+    today = pd.Timestamp.today()
 
-        pending_days = row["DAYS ELAPSED"]
+    df["DAYS_ELAPSED"] = (
+        today - df["APS_RECEIVED_DATE"]
+    ).dt.days
 
-        last_mail = str(row.get("LastMailSent", ""))
+    print(df[["FULL_NAME", "DAYS_ELAPSED"]].head())
 
-        if pending_days >= THRESHOLD_DAYS:
+    # Filter rows
+    filtered = df[
+        (df["DAYS_ELAPSED"] >= THRESHOLD_DAYS) &
+        (df["DAYS_ELAPSED"] <= MAX_DAYS)
+    ]
 
-            if today not in last_mail:
-
-                filtered_rows.append((index, row))
-
-    return df, filtered_rows
+    return filtered

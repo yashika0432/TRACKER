@@ -2,40 +2,57 @@ import smtplib
 from email.mime.text import MIMEText
 from config.settings import *
 
-def send_email(to_emails, student_name, pending_days):
+def send_email(to_emails, student_data):
 
-    subject = f"Student Escalation Alert - {student_name}"
+    try:
 
-    body = f"""
-    Student escalation alert.
+        subject = "Student Escalation Alert"
 
-    Student Name: {student_name}
-    Pending Days: {pending_days}
+        body = f"""
+Hi,
 
-    The student's pending days have crossed the threshold.
+The following students crossed the threshold:
 
-    Please investigate the case.
+{student_data}
 
-    Regards,
-    Automated Student Tracking System
-    """
+Please investigate the cases.
 
-    msg = MIMEText(body)
+Regards,
+Automated Student Tracking System
+"""
+        msg = MIMEText(body)
 
-    msg["Subject"] = subject
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = ", ".join(to_emails)
+        msg["Subject"] = subject
+        msg["From"] = SENDER_EMAIL
+        msg["To"] = ", ".join(to_emails)
 
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        print("Sending mail to:", to_emails)
 
-    server.starttls()
+        server = smtplib.SMTP(
+            SMTP_SERVER,
+            SMTP_PORT,
+            timeout=30
+        )
 
-    server.login(SENDER_EMAIL, APP_PASSWORD)
+        server.starttls()
 
-    server.sendmail(
-        SENDER_EMAIL,
-        to_emails,
-        msg.as_string()
-    )
+        server.login(
+            SENDER_EMAIL,
+            APP_PASSWORD
+        )
 
-    server.quit()
+        server.sendmail(
+            SENDER_EMAIL,
+            to_emails,
+            msg.as_string()
+        )
+
+        server.quit()
+
+        print("Mail sent successfully")
+
+    except Exception as e:
+
+        print("Error sending mail")
+
+        print(e)
